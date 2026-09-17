@@ -1,0 +1,24 @@
+# OS / editor noise
+Thumbs.db
+desktop.ini
+.DS_Store
+*.swp
+*~
+.vscode/
+.idea/
+
+# Never commit credentials or server config overrides
+.env
+.env.*
+*.pem
+*.key
+cpanel.yml.local
+
+# Documentation is kept locally, not published to the repo (per request)
+README.md
+
+# Original source material (audio masters, full-size photos, .docx/.pdf).
+# Kept off the repo because this repo is pulled straight into the public web
+# root — no reason to place 13 MB of originals on a public-facing server.
+# Keep your own backup of _source/.
+_source/

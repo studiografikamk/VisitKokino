@@ -1,0 +1,26 @@
+# Normalise to LF in the repository. The deploy target is Linux/Apache, and a
+# .htaccess or .php file checked out with CRLF can misbehave there.
+* text=auto eol=lf
+
+*.html   text eol=lf
+*.css    text eol=lf
+*.js     text eol=lf
+*.json   text eol=lf
+*.php    text eol=lf
+*.txt    text eol=lf
+*.xml    text eol=lf
+*.svg    text eol=lf
+.htaccess        text eol=lf
+.gitignore       text eol=lf
+site.webmanifest text eol=lf
+
+# Binaries: never touch
+*.mp3    binary
+*.webp   binary
+*.jpg    binary
+*.jpeg   binary
+*.png    binary
+*.avif   binary
+*.woff2  binary
+*.pdf    binary
+*.docx   binary

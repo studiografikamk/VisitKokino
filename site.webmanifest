@@ -1,0 +1,13 @@
+{
+  "name": "Visit Kokino — Megalithic Observatory",
+  "short_name": "Kokino",
+  "description": "Visitor guide and free audio guide to the Bronze Age megalithic observatory at Tatichev Kamen, North Macedonia.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#05070F",
+  "theme_color": "#05070F",
+  "lang": "en",
+  "icons": [
+    { "src": "/assets/icons/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

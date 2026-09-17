@@ -1,0 +1,190 @@
+# =============================================================================
+#  visitkokino.com — Apache configuration (cPanel / LiteSpeed compatible)
+#
+#  This is a fully static site: no PHP, no database, no server-side input
+#  handling. There is therefore no SQL injection surface at all — there is no
+#  SQL. What follows hardens everything that remains.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Don't advertise the software stack
+# -----------------------------------------------------------------------------
+ServerSignature Off
+<IfModule mod_headers.c>
+  Header always unset X-Powered-By
+  Header always unset X-Pingback
+  Header always unset Server
+</IfModule>
+
+# -----------------------------------------------------------------------------
+# 2. No directory listings, no following symlinks into surprises
+# -----------------------------------------------------------------------------
+# Note: -ExecCGI is deliberately NOT set. On some cPanel PHP handlers it also
+# disables PHP, which would break the booking form.
+Options -Indexes +FollowSymLinks
+DirectoryIndex index.html
+
+# -----------------------------------------------------------------------------
+# 3. Force HTTPS and a single canonical hostname (www -> apex)
+# -----------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # http -> https
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^(.*)$ https://visitkokino.com/$1 [R=301,L]
+
+  # www -> non-www
+  RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+  # Block requests that try to smuggle a script tag or a traversal through the URL
+  RewriteCond %{QUERY_STRING} (<|%3C)script|base64_|(\.\./){2,} [NC,OR]
+  RewriteCond %{QUERY_STRING} (union\s+select|information_schema|concat\s*\() [NC]
+  RewriteRule .* - [F,L]
+</IfModule>
+
+# -----------------------------------------------------------------------------
+# 4. Security headers
+# -----------------------------------------------------------------------------
+<IfModule mod_headers.c>
+
+  # --- Content Security Policy ---------------------------------------------
+  # No 'unsafe-inline' and no 'unsafe-eval' anywhere: every script and style
+  # lives in its own file, so an injected <script> or style attribute cannot
+  # execute. Update the allowlist below if you ever add a new CDN.
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data:; media-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; manifest-src 'self'; worker-src 'none'; upgrade-insecure-requests"
+
+  # --- Clickjacking ---------------------------------------------------------
+  Header always set X-Frame-Options "DENY"
+
+  # --- MIME sniffing --------------------------------------------------------
+  Header always set X-Content-Type-Options "nosniff"
+
+  # --- Referrer leakage -----------------------------------------------------
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # --- Feature access -------------------------------------------------------
+  Header always set Permissions-Policy "geolocation=(), camera=(), microphone=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), interest-cohort=()"
+
+  # --- Cross-origin isolation ----------------------------------------------
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+  Header always set Cross-Origin-Resource-Policy "same-origin"
+  Header always set X-Permitted-Cross-Domain-Policies "none"
+
+  # --- HSTS -----------------------------------------------------------------
+  # Enable only once HTTPS is confirmed working on the apex AND www.
+  # 'preload' is intentionally omitted: it is very hard to undo.
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+
+</IfModule>
+
+# -----------------------------------------------------------------------------
+# 5. Keep private files private
+# -----------------------------------------------------------------------------
+
+# Anything beginning with a dot (.git, .env, .htaccess itself, .DS_Store)
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+
+# ...and anything INSIDE a dot-directory (.git/config, .claude/launch.json).
+# FilesMatch only sees the filename, so this needs a rewrite rule.
+<IfModule mod_rewrite.c>
+  RewriteRule (^|/)\.(?!well-known/) - [F,L]
+</IfModule>
+
+# Source, config and documentation that must never be served
+<FilesMatch "\.(md|py|json5|yml|yaml|ini|log|bak|sql|sh|dist|lock|old|orig|swp|tmp)$">
+  Require all denied
+</FilesMatch>
+
+# The _source folder holds originals and notes, not web content
+RedirectMatch 404 ^/_source(/|$)
+RedirectMatch 404 ^/\.git(/|$)
+
+# Note: .json is deliberately NOT in the deny list above — the Macedonian
+# translation files under /assets/i18n/ are fetched by the language switcher.
+
+# -----------------------------------------------------------------------------
+# 6. Correct MIME types
+# -----------------------------------------------------------------------------
+<IfModule mod_mime.c>
+  AddType text/css                     .css
+  AddType application/javascript       .js
+  AddType application/json             .json
+  AddType image/webp                   .webp
+  AddType image/avif                   .avif
+  AddType image/svg+xml                .svg
+  AddType audio/mpeg                   .mp3
+  AddType application/manifest+json    .webmanifest
+  AddCharset UTF-8                     .html .css .js .json .svg
+</IfModule>
+
+# -----------------------------------------------------------------------------
+# 7. Compression
+# -----------------------------------------------------------------------------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml \
+    application/javascript application/json image/svg+xml application/manifest+json
+</IfModule>
+
+# -----------------------------------------------------------------------------
+# 8. Caching
+#    Long life for fingerprinted-by-content assets, short for HTML so edits
+#    go live immediately.
+# -----------------------------------------------------------------------------
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault                          "access plus 1 month"
+  ExpiresByType text/html                 "access plus 0 seconds"
+  ExpiresByType application/json          "access plus 1 hour"
+  ExpiresByType text/css                  "access plus 1 year"
+  ExpiresByType application/javascript    "access plus 1 year"
+  ExpiresByType image/webp                "access plus 1 year"
+  ExpiresByType image/avif                "access plus 1 year"
+  ExpiresByType image/svg+xml             "access plus 1 year"
+  ExpiresByType audio/mpeg                "access plus 1 year"
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(css|js|webp|avif|svg|mp3|woff2)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "public, max-age=0, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# -----------------------------------------------------------------------------
+# 9. Error pages
+# -----------------------------------------------------------------------------
+ErrorDocument 404 /404.html
+ErrorDocument 403 /404.html
+
+# -----------------------------------------------------------------------------
+# 10. Limit request methods
+#     The site is static apart from one endpoint, so POST is accepted only
+#     there. Everything else is read-only.
+# -----------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  # POST anywhere except the booking handler -> 405
+  RewriteCond %{REQUEST_METHOD} =POST
+  RewriteCond %{REQUEST_URI} !^/booking\.php$
+  RewriteRule .* - [R=405,L]
+
+  # Anything that is not GET / HEAD / OPTIONS / POST -> 405
+  RewriteCond %{REQUEST_METHOD} !^(GET|HEAD|OPTIONS|POST)$
+  RewriteRule .* - [R=405,L]
+</IfModule>
+
+# -----------------------------------------------------------------------------
+# 11. The booking handler must never be indexed or cached
+# -----------------------------------------------------------------------------
+<Files "booking.php">
+  <IfModule mod_headers.c>
+    Header always set X-Robots-Tag "noindex, nofollow"
+    Header always set Cache-Control "no-store, max-age=0"
+  </IfModule>
+</Files>

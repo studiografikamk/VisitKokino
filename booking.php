@@ -11,8 +11,9 @@
  *  - Email header injection: every header value is either a fixed constant or
  *    an address that passed FILTER_VALIDATE_EMAIL *and* a CR/LF check.
  *  - Spam: honeypot + per-IP rate limit + same-origin check + an HMAC-signed
- *    maths challenge. The answer never travels to the browser, so a bot cannot
- *    read it out of the page; it can only be checked against the signature.
+ *    maths challenge. The answer is never placed in the token -- the signature
+ *    is an HMAC *over* the answer -- so it cannot be recovered from the token,
+ *    nor brute forced offline without the signing key.
  *  - XSS: nothing from the request is ever rendered back to the browser.
  *  - Mail body is text/plain, so nothing in it is interpreted as markup.
  */
@@ -121,28 +122,45 @@ function rate_limited(): bool {
 
 // ---------------------------------------------------------- maths challenge --
 
+/** Numbers as words, so a naive "\d+ [+-] \d+" parser cannot just evaluate it. */
+function number_word(int $n, string $lang): string {
+    $en = [2 => 'two', 3 => 'three', 4 => 'four', 5 => 'five',
+           6 => 'six', 7 => 'seven', 8 => 'eight', 9 => 'nine'];
+    $mk = [2 => 'два', 3 => 'три', 4 => 'четири', 5 => 'пет',
+           6 => 'шест', 7 => 'седум', 8 => 'осум', 9 => 'девет'];
+    $t = $lang === 'mk' ? $mk : $en;
+    return $t[$n] ?? (string)$n;
+}
+
 /**
- * Build a question plus a signed token. The correct answer is inside the token
- * in signed form only — it is never sent to the browser in the clear.
+ * Build a question plus a signed token.
+ *
+ * The answer is NOT in the payload. The signature IS the answer check: it is an
+ * HMAC over the answer together with the nonce and expiry. Without the signing
+ * key the answer cannot be recovered from the token, and it cannot be brute
+ * forced offline either — only by submitting, which the rate limit caps at five
+ * attempts an hour.
  */
-function make_challenge(): array {
-    $a  = random_int(2, 9);
-    $b  = random_int(2, 9);
-    $op = random_int(0, 1) === 0 ? '+' : '-';
+function make_challenge(string $lang = 'en'): array {
+    $a    = random_int(2, 9);
+    $b    = random_int(2, 9);
+    $plus = random_int(0, 1) === 1;
 
-    if ($op === '-' && $b > $a) { [$a, $b] = [$b, $a]; }  // never negative
-    $answer = $op === '+' ? $a + $b : $a - $b;
+    if (!$plus && $b > $a) { [$a, $b] = [$b, $a]; }   // never negative
+    $answer = $plus ? $a + $b : $a - $b;
 
-    $payload = base64_encode(json_encode([
-        'a' => $answer,
-        'e' => time() + CHALLENGE_TTL,
-        'n' => bin2hex(random_bytes(6)),
-    ], JSON_THROW_ON_ERROR));
+    $expiry = time() + CHALLENGE_TTL;
+    $nonce  = bin2hex(random_bytes(8));
 
-    $sig = hash_hmac('sha256', $payload, secret_key());
+    $payload = base64_encode(json_encode(
+        ['e' => $expiry, 'n' => $nonce], JSON_THROW_ON_ERROR
+    ));
+    $sig = hash_hmac('sha256', $answer . '|' . $nonce . '|' . $expiry, secret_key());
+
+    $word = $lang === 'mk' ? ($plus ? 'плус' : 'минус') : ($plus ? 'plus' : 'minus');
 
     return [
-        'question' => sprintf('%d %s %d', $a, $op, $b),
+        'question' => number_word($a, $lang) . ' ' . $word . ' ' . number_word($b, $lang),
         'token'    => $payload . '.' . $sig,
     ];
 }
@@ -156,9 +174,6 @@ function challenge_ok(string $token, string $given): bool {
     if (count($parts) !== 2) return false;
     [$payload, $sig] = $parts;
 
-    $expected = hash_hmac('sha256', $payload, secret_key());
-    if (!hash_equals($expected, $sig)) return false;   // forged or tampered
-
     $raw = base64_decode($payload, true);
     if ($raw === false) return false;
 
@@ -168,17 +183,28 @@ function challenge_ok(string $token, string $given): bool {
         return false;
     }
 
-    if (!is_array($data) || !isset($data['a'], $data['e'])) return false;
-    if (time() > (int)$data['e']) return false;         // expired
+    if (!is_array($data) || !isset($data['e'], $data['n'])) return false;
+    if (time() > (int)$data['e']) return false;                 // expired
+    if (!preg_match('/^[a-f0-9]{16}$/', (string)$data['n'])) return false;
 
-    return (int)$given === (int)$data['a'];
+    // Recompute the signature from the ANSWER THE VISITOR GAVE. If it matches,
+    // the answer is right, the token is ours, and the expiry is untampered --
+    // all three in one comparison.
+    $expected = hash_hmac(
+        'sha256',
+        (int)$given . '|' . $data['n'] . '|' . (int)$data['e'],
+        secret_key()
+    );
+
+    return hash_equals($expected, $sig);
 }
 
 // ------------------------------------------------------------------- gate 1 --
 // GET: either hand out a challenge, or refuse politely.
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     if (isset($_GET['challenge'])) {
-        send_json(make_challenge());
+        $lang = ($_GET['lang'] ?? '') === 'mk' ? 'mk' : 'en';
+        send_json(make_challenge($lang));
     }
     http_response_code(405);
     header('Content-Type: text/plain; charset=utf-8');

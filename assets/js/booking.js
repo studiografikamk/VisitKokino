@@ -46,7 +46,8 @@
     mathQ.textContent = '…';
     if (mathInput) mathInput.value = '';
 
-    return fetch('booking.php?challenge=1', {
+    var lang = document.documentElement.lang === 'mk' ? 'mk' : 'en';
+    return fetch('booking.php?challenge=1&lang=' + lang, {
       headers: { 'Accept': 'application/json' },
       credentials: 'same-origin',
       cache: 'no-store'
@@ -68,6 +69,11 @@
   }
 
   loadChallenge();
+
+  // The sum is worded in the page language, so re-issue it on a switch.
+  document.querySelectorAll('.lang-switch button').forEach(function (b) {
+    b.addEventListener('click', function () { setTimeout(loadChallenge, 300); });
+  });
 
   /* ---------- validation --------------------------------------------------- */
 

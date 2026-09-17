@@ -3,11 +3,33 @@
   "short_name": "Kokino",
   "description": "Visitor guide and free audio guide to the Bronze Age megalithic observatory at Tatichev Kamen, North Macedonia.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#05070F",
   "theme_color": "#05070F",
   "lang": "en",
   "icons": [
-    { "src": "/assets/icons/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    {
+      "src": "/assets/icons/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }

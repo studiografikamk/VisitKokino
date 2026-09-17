@@ -34,6 +34,11 @@ const RATE_WINDOW    = 3600;  // ... per this many seconds, per IP
 const MAX_FIELD      = 2000;
 const CHALLENGE_TTL  = 1800;  // a maths challenge is valid for 30 minutes
 
+// Pricing, so the enquiry email can say exactly what to charge.
+const TOUR_PRICE   = 119;  // EUR, flat for the vehicle, not per person
+const TOUR_MAX_PAX = 3;    // the flat price covers up to this many travellers
+const LUNCH_PRICE  = 40;   // EUR per person, optional, at Etno Selo Timcevski
+
 // ------------------------------------------------------------- no indexing --
 header('X-Robots-Tag: noindex, nofollow', true);
 header('Referrer-Policy: strict-origin-when-cross-origin', true);
@@ -271,11 +276,68 @@ if ($errors) {
 
 // -------------------------------------------------------------- build mail --
 $lunchLabel = match ($lunch) {
-    'yes'       => 'Yes, include the lunch (+40 EUR per person)',
+    'yes'       => 'Yes, include the lunch (+' . LUNCH_PRICE . ' EUR per person)',
     'no'        => 'No lunch',
     'undecided' => 'Undecided',
     default     => 'Not specified',
 };
+
+/**
+ * Work out what to charge, showing the arithmetic rather than only a total so
+ * the figure can be checked at a glance.
+ */
+function price_lines(string $people, string $lunch): array {
+    $pax = ctype_digit($people) ? (int)$people : 0;
+
+    $row = static function (string $label, string $amount): string {
+        return str_pad($label, 40) . str_pad($amount, 9, ' ', STR_PAD_LEFT);
+    };
+
+    $out   = ['PRICE', str_repeat('-', 49)];
+    $out[] = $row('Tour (private, up to ' . TOUR_MAX_PAX . ' travellers)', TOUR_PRICE . ' EUR');
+
+    $lunchTotal = $pax > 0 ? $pax * LUNCH_PRICE : 0;
+    $sum        = $pax > 0 ? sprintf('%d x %d EUR', $pax, LUNCH_PRICE) : '';
+
+    if ($lunch === 'yes') {
+        if ($pax > 0) {
+            $out[] = $row('Lunch at Etno Selo (' . $sum . ')', $lunchTotal . ' EUR');
+            $out[] = str_repeat('-', 49);
+            $out[] = $row('TOTAL TO CHARGE', (TOUR_PRICE + $lunchTotal) . ' EUR');
+        } else {
+            $out[] = $row('Lunch at Etno Selo', LUNCH_PRICE . ' EUR pp');
+            $out[] = str_repeat('-', 49);
+            $out[] = $row('TOTAL', TOUR_PRICE . ' EUR + lunch');
+            $out[] = '  ** Travellers not given - ask, then add ' . LUNCH_PRICE . ' EUR per person.';
+        }
+    } elseif ($lunch === 'no') {
+        $out[] = $row('Lunch', 'not taken');
+        $out[] = str_repeat('-', 49);
+        $out[] = $row('TOTAL TO CHARGE', TOUR_PRICE . ' EUR');
+    } else {
+        // undecided: give both figures so either answer is covered
+        if ($pax > 0) {
+            $out[] = $row('Lunch (undecided, ' . $sum . ')', $lunchTotal . ' EUR');
+            $out[] = str_repeat('-', 49);
+            $out[] = $row('TOTAL without lunch', TOUR_PRICE . ' EUR');
+            $out[] = $row('TOTAL with lunch', (TOUR_PRICE + $lunchTotal) . ' EUR');
+        } else {
+            $out[] = $row('Lunch', 'undecided');
+            $out[] = str_repeat('-', 49);
+            $out[] = $row('TOTAL without lunch', TOUR_PRICE . ' EUR');
+            $out[] = '  ** Travellers not given - lunch is ' . LUNCH_PRICE . ' EUR per person.';
+        }
+    }
+
+    if ($pax > TOUR_MAX_PAX) {
+        $out[] = '';
+        $out[] = '  ** ' . $pax . ' travellers. The ' . TOUR_PRICE
+                 . ' EUR price covers up to ' . TOUR_MAX_PAX . '.';
+        $out[] = '     Check the vehicle and confirm the price before accepting.';
+    }
+
+    return $out;
+}
 
 $lines = [
     'New booking enquiry from visitkokino.com',
@@ -290,6 +352,9 @@ $lines = [
     'Lunch option:     ' . $lunchLabel,
     'Pickup address:   ' . ($pickup !== '' ? $pickup : 'not specified'),
     '',
+    '',
+    ...price_lines($people, $lunch),
+    '',
     'Message',
     str_repeat('-', 44),
     $message !== '' ? $message : '(none)',
@@ -299,7 +364,8 @@ $lines = [
     'Page:  ' . (header_safe($ref) ? substr($ref, 0, 200) : ''),
 ];
 
-$body = wordwrap(implode("\r\n", $lines), 78, "\r\n", false);
+// No wordwrap: the price block is column-aligned and wrapping would break it.
+$body = implode("\r\n", $lines);
 
 // Subject must be header-safe; encode so non-ASCII names survive.
 $subject = '=?UTF-8?B?' . base64_encode('Kokino booking enquiry — ' . $name) . '?=';

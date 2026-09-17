@@ -2,15 +2,17 @@
 /**
  * visitkokino.com — booking / enquiry handler
  *
- * The only server-side code on the site. It accepts one POST from the booking
- * form on contact.html, validates it strictly, and emails it on. It reads no
+ * The only server-side code on the site. It serves a signed maths challenge on
+ * GET, and accepts one POST from the booking form on contact.html. It reads no
  * database, writes no user files, executes nothing, and echoes back nothing a
  * visitor supplied.
  *
  * Threat notes:
  *  - Email header injection: every header value is either a fixed constant or
  *    an address that passed FILTER_VALIDATE_EMAIL *and* a CR/LF check.
- *  - Spam: honeypot field + per-IP rate limit + same-origin check.
+ *  - Spam: honeypot + per-IP rate limit + same-origin check + an HMAC-signed
+ *    maths challenge. The answer never travels to the browser, so a bot cannot
+ *    read it out of the page; it can only be checked against the signature.
  *  - XSS: nothing from the request is ever rendered back to the browser.
  *  - Mail body is text/plain, so nothing in it is interpreted as markup.
  */
@@ -18,22 +20,24 @@
 declare(strict_types=1);
 
 // ---------------------------------------------------------------- settings --
-const MAIL_FROM     = 'info@visitkokino.com';
+const MAIL_FROM      = 'info@visitkokino.com';
 const MAIL_FROM_NAME = 'Visit Kokino';
 // Single destination. Forwarding to personal addresses is configured in cPanel,
 // which keeps deliverability (SPF/DKIM) on one domain instead of two providers.
-const MAIL_TO       = ['info@visitkokino.com'];
-const SITE_HOST     = 'visitkokino.com';
-const REDIRECT_OK   = '/contact.html?sent=1#booking';
-const REDIRECT_BAD  = '/contact.html?sent=0#booking';
-const RATE_MAX      = 5;     // submissions ...
-const RATE_WINDOW   = 3600;  // ... per this many seconds, per IP
-const MAX_FIELD     = 2000;
+const MAIL_TO        = ['info@visitkokino.com'];
+const SITE_HOST      = 'visitkokino.com';
+const REDIRECT_OK    = '/contact.html?sent=1#booking';
+const REDIRECT_BAD   = '/contact.html?sent=0#booking';
+const RATE_MAX       = 5;     // submissions ...
+const RATE_WINDOW    = 3600;  // ... per this many seconds, per IP
+const MAX_FIELD      = 2000;
+const CHALLENGE_TTL  = 1800;  // a maths challenge is valid for 30 minutes
 
 // ------------------------------------------------------------- no indexing --
 header('X-Robots-Tag: noindex, nofollow', true);
 header('Referrer-Policy: strict-origin-when-cross-origin', true);
 header('X-Content-Type-Options: nosniff', true);
+header('Cache-Control: no-store, max-age=0', true);
 
 // ------------------------------------------------------------------ helpers --
 
@@ -43,16 +47,20 @@ function wants_json(): bool {
     return str_contains($a, 'application/json') || $x === 'fetch';
 }
 
+function send_json(array $payload, int $status = 200) {
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // No `never` return type: that needs PHP 8.1, and this way the file runs on 8.0 too.
 function finish(bool $ok, string $message, int $status = 200) {
     if (wants_json()) {
-        http_response_code($status);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['ok' => $ok, 'message' => $message], JSON_UNESCAPED_UNICODE);
-    } else {
-        http_response_code($ok ? 303 : 303);
-        header('Location: ' . ($ok ? REDIRECT_OK : REDIRECT_BAD));
+        send_json(['ok' => $ok, 'message' => $message], $status);
     }
+    http_response_code(303);
+    header('Location: ' . ($ok ? REDIRECT_OK : REDIRECT_BAD));
     exit;
 }
 
@@ -62,8 +70,7 @@ function clean(string $key, int $limit = 300): string {
     if (!is_string($v)) return '';
     $v = substr($v, 0, MAX_FIELD);
     $v = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $v) ?? '';
-    $v = trim($v);
-    return mb_substr($v, 0, $limit, 'UTF-8');
+    return mb_substr(trim($v), 0, $limit, 'UTF-8');
 }
 
 /** Any value that reaches a mail header must not be able to start a new one. */
@@ -73,6 +80,25 @@ function header_safe(string $v): bool {
 
 function client_ip(): string {
     return (string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+}
+
+/**
+ * Signing key for the maths challenge.
+ *
+ * Deliberately kept OUTSIDE the document root and OUT of git: it is generated
+ * on first use and lives one directory above the site. If the repository ever
+ * leaked, the key would not leak with it.
+ */
+function secret_key(): string {
+    $path = dirname(__DIR__) . '/.vk_form_secret';
+    if (is_readable($path)) {
+        $k = trim((string)file_get_contents($path));
+        if (strlen($k) >= 32) return $k;
+    }
+    $k = bin2hex(random_bytes(32));
+    @file_put_contents($path, $k, LOCK_EX);
+    @chmod($path, 0600);
+    return $k;
 }
 
 /** Simple file-based throttle. Keyed by hashed IP so no raw IP is stored. */
@@ -93,10 +119,73 @@ function rate_limited(): bool {
     return false;
 }
 
+// ---------------------------------------------------------- maths challenge --
+
+/**
+ * Build a question plus a signed token. The correct answer is inside the token
+ * in signed form only — it is never sent to the browser in the clear.
+ */
+function make_challenge(): array {
+    $a  = random_int(2, 9);
+    $b  = random_int(2, 9);
+    $op = random_int(0, 1) === 0 ? '+' : '-';
+
+    if ($op === '-' && $b > $a) { [$a, $b] = [$b, $a]; }  // never negative
+    $answer = $op === '+' ? $a + $b : $a - $b;
+
+    $payload = base64_encode(json_encode([
+        'a' => $answer,
+        'e' => time() + CHALLENGE_TTL,
+        'n' => bin2hex(random_bytes(6)),
+    ], JSON_THROW_ON_ERROR));
+
+    $sig = hash_hmac('sha256', $payload, secret_key());
+
+    return [
+        'question' => sprintf('%d %s %d', $a, $op, $b),
+        'token'    => $payload . '.' . $sig,
+    ];
+}
+
+/** @return bool true only if the token is authentic, unexpired and answered correctly. */
+function challenge_ok(string $token, string $given): bool {
+    if ($token === '' || $given === '') return false;
+    if (!preg_match('/^-?\d{1,3}$/', $given)) return false;
+
+    $parts = explode('.', $token);
+    if (count($parts) !== 2) return false;
+    [$payload, $sig] = $parts;
+
+    $expected = hash_hmac('sha256', $payload, secret_key());
+    if (!hash_equals($expected, $sig)) return false;   // forged or tampered
+
+    $raw = base64_decode($payload, true);
+    if ($raw === false) return false;
+
+    try {
+        $data = json_decode($raw, true, 8, JSON_THROW_ON_ERROR);
+    } catch (Throwable $e) {
+        return false;
+    }
+
+    if (!is_array($data) || !isset($data['a'], $data['e'])) return false;
+    if (time() > (int)$data['e']) return false;         // expired
+
+    return (int)$given === (int)$data['a'];
+}
+
 // ------------------------------------------------------------------- gate 1 --
-// Method
+// GET: either hand out a challenge, or refuse politely.
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-    finish(false, 'Method not allowed.', 405);
+    if (isset($_GET['challenge'])) {
+        send_json(make_challenge());
+    }
+    http_response_code(405);
+    header('Content-Type: text/plain; charset=utf-8');
+    header('Allow: POST');
+    echo "This endpoint only accepts the booking form.\n";
+    echo "Please use https://visitkokino.com/contact.html#booking\n";
+    exit;
 }
 
 // ------------------------------------------------------------------- gate 2 --
@@ -123,26 +212,32 @@ if (rate_limited()) {
     finish(false, 'Too many enquiries from this connection. Please try again later, or email us directly.', 429);
 }
 
+// ------------------------------------------------------------------- gate 5 --
+// Maths challenge.
+if (!challenge_ok(clean('math_token', 400), clean('math_answer', 8))) {
+    finish(false, 'The anti-spam answer was wrong or has expired. Please try the sum again.', 422);
+}
+
 // ----------------------------------------------------------------- collect --
-$name     = clean('name', 120);
-$email    = clean('email', 190);
-$phone    = clean('phone', 60);
-$date     = clean('date', 30);
-$people   = clean('people', 20);
-$lunch    = clean('lunch', 40);
-$pickup   = clean('pickup', 300);
-$message  = clean('message', 2000);
+$name    = clean('name', 120);
+$email   = clean('email', 190);
+$phone   = clean('phone', 60);
+$date    = clean('date', 30);
+$people  = clean('people', 20);
+$lunch   = clean('lunch', 40);
+$pickup  = clean('pickup', 300);
+$message = clean('message', 2000);
 
 // ---------------------------------------------------------------- validate --
 $errors = [];
 
-if ($name === '' || mb_strlen($name) < 2)                      $errors[] = 'name';
+if ($name === '' || mb_strlen($name) < 2)                        $errors[] = 'name';
 if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)
-    || !header_safe($email))                                   $errors[] = 'email';
-if ($message === '' && $pickup === '' && $date === '')         $errors[] = 'message';
+    || !header_safe($email))                                     $errors[] = 'email';
+if ($message === '' && $pickup === '' && $date === '')           $errors[] = 'message';
 if ($date !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) $errors[] = 'date';
-if ($people !== '' && !preg_match('/^[1-4]$/', $people))         $errors[] = 'people';
-if (!in_array($lunch, ['', 'yes', 'no', 'undecided'], true))     $errors[] = 'lunch';
+if ($people !== '' && !preg_match('/^[1-4]$/', $people))          $errors[] = 'people';
+if (!in_array($lunch, ['', 'yes', 'no', 'undecided'], true))      $errors[] = 'lunch';
 
 if ($errors) {
     finish(false, 'Please check the highlighted fields and try again.', 422);
@@ -160,14 +255,14 @@ $lines = [
     'New booking enquiry from visitkokino.com',
     str_repeat('=', 44),
     '',
-    'Name:            ' . $name,
-    'Email:           ' . $email,
-    'Phone / WhatsApp:' . ' ' . ($phone !== '' ? $phone : '-'),
+    'Name:             ' . $name,
+    'Email:            ' . $email,
+    'Phone / WhatsApp: ' . ($phone !== '' ? $phone : '-'),
     '',
-    'Preferred date:  ' . ($date !== '' ? $date : 'not specified'),
-    'Travellers:      ' . ($people !== '' ? $people : 'not specified'),
-    'Lunch option:    ' . $lunchLabel,
-    'Pickup address:  ' . ($pickup !== '' ? $pickup : 'not specified'),
+    'Preferred date:   ' . ($date !== '' ? $date : 'not specified'),
+    'Travellers:       ' . ($people !== '' ? $people : 'not specified'),
+    'Lunch option:     ' . $lunchLabel,
+    'Pickup address:   ' . ($pickup !== '' ? $pickup : 'not specified'),
     '',
     'Message',
     str_repeat('-', 44),
@@ -178,12 +273,10 @@ $lines = [
     'Page:  ' . (header_safe($ref) ? substr($ref, 0, 200) : ''),
 ];
 
-$body = implode("\r\n", $lines);
-$body = wordwrap($body, 78, "\r\n", false);
+$body = wordwrap(implode("\r\n", $lines), 78, "\r\n", false);
 
 // Subject must be header-safe; encode so non-ASCII names survive.
-$subjectRaw = 'Kokino booking enquiry — ' . $name;
-$subject    = '=?UTF-8?B?' . base64_encode($subjectRaw) . '?=';
+$subject = '=?UTF-8?B?' . base64_encode('Kokino booking enquiry — ' . $name) . '?=';
 
 $headers = [
     'From: ' . MAIL_FROM_NAME . ' <' . MAIL_FROM . '>',

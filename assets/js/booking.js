@@ -1,9 +1,13 @@
 /* ==========================================================================
    Visit Kokino — booking form
 
-   Progressive enhancement only. With JavaScript off the form is an ordinary
-   POST to booking.php, which redirects back with ?sent=1 or ?sent=0. With
-   JavaScript on it submits in the background and reports inline.
+   The anti-spam sum is issued and signed by booking.php. The correct answer
+   never reaches the browser, so it cannot be read out of the page; the server
+   verifies the answer against an HMAC it signed itself.
+
+   Because of that the form needs JavaScript. The contact page also carries
+   phone, WhatsApp/Viber and a mailto link, so nobody is left without a way
+   through if scripting is off.
    ========================================================================== */
 (function () {
   'use strict';
@@ -17,6 +21,11 @@
   var submitLbl = submitBtn ? submitBtn.querySelector('span') : null;
   var originalLabel = submitLbl ? submitLbl.textContent : '';
 
+  var mathWrap = form.querySelector('[data-math-wrap]');
+  var mathQ = form.querySelector('[data-math-q]');
+  var mathToken = form.querySelector('[data-math-token]');
+  var mathInput = form.elements.math_answer;
+
   /* ---------- status ------------------------------------------------------ */
 
   function showStatus(ok, message) {
@@ -28,6 +37,37 @@
     statusMsg.textContent = message;
     statusBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
+
+  /* ---------- anti-spam sum ------------------------------------------------ */
+
+  function loadChallenge() {
+    if (!mathQ || !mathToken) return Promise.resolve();
+
+    mathQ.textContent = '…';
+    if (mathInput) mathInput.value = '';
+
+    return fetch('booking.php?challenge=1', {
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin',
+      cache: 'no-store'
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.question || !d.token) throw new Error('bad challenge');
+        mathQ.textContent = d.question;
+        mathToken.value = d.token;
+      })
+      .catch(function () {
+        mathQ.textContent = '—';
+        mathToken.value = '';
+        if (mathWrap) {
+          var hint = mathWrap.querySelector('.field-hint');
+          if (hint) hint.textContent = 'Could not load the anti-spam check. Please reload the page.';
+        }
+      });
+  }
+
+  loadChallenge();
 
   /* ---------- validation --------------------------------------------------- */
 
@@ -64,10 +104,16 @@
       markError(date, false);
     }
 
+    // Only check that a number was entered — the server decides if it is right.
+    if (mathInput) {
+      bad = !/^-?\d{1,3}$/.test(mathInput.value.trim());
+      markError(mathInput, bad);
+      if (bad) ok = false;
+    }
+
     return ok;
   }
 
-  // Clear a field's error as soon as the visitor edits it
   Array.prototype.forEach.call(form.querySelectorAll('input, select, textarea'), function (el) {
     el.addEventListener('input', function () { markError(el, false); });
   });
@@ -75,17 +121,18 @@
   /* ---------- submit -------------------------------------------------------- */
 
   form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
     if (!validate()) {
-      e.preventDefault();
       var firstBad = form.querySelector('.field.has-error input, .field.has-error select');
       if (firstBad) firstBad.focus();
       return;
     }
 
-    // fetch isn't available everywhere — let those browsers post normally
-    if (!window.fetch || !window.FormData) return;
-
-    e.preventDefault();
+    if (!window.fetch || !window.FormData) {
+      showStatus(false, 'Your browser cannot submit this form. Please email info@visitkokino.com or message us on WhatsApp.');
+      return;
+    }
 
     if (submitBtn) {
       submitBtn.disabled = true;
@@ -105,10 +152,18 @@
       })
       .then(function (data) {
         showStatus(!!data.ok, data.message || '');
-        if (data.ok) form.reset();
+        if (data.ok) {
+          form.reset();
+          Array.prototype.forEach.call(form.querySelectorAll('.field.has-error'), function (f) {
+            f.classList.remove('has-error');
+          });
+        }
+        // A token is single-use in practice: issue a fresh sum either way.
+        return loadChallenge();
       })
       .catch(function () {
         showStatus(false, 'We could not reach the server. Please email info@visitkokino.com or message us on WhatsApp.');
+        return loadChallenge();
       })
       .then(function () {
         if (submitBtn) {
@@ -118,7 +173,7 @@
       });
   });
 
-  /* ---------- no-JS round trip: booking.php redirected back here ------------ */
+  /* ---------- returning from a no-JS style redirect ------------------------- */
 
   var sent = new URLSearchParams(window.location.search).get('sent');
   if (sent === '1') {

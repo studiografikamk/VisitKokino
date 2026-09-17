@@ -30,14 +30,16 @@ DirectoryIndex index.html
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # http -> https
+  # www -> apex, in a single hop, whichever scheme it arrived on.
+  # This runs FIRST so that a www request never needs two redirects when
+  # .htaccess is the thing handling it.
+  RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+  # http -> https (apex)
   RewriteCond %{HTTPS} !=on
   RewriteCond %{HTTP:X-Forwarded-Proto} !https
   RewriteRule ^(.*)$ https://visitkokino.com/$1 [R=301,L]
-
-  # www -> non-www
-  RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
-  RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
 
   # Block requests that try to smuggle a script tag or a traversal through the URL
   RewriteCond %{QUERY_STRING} (<|%3C)script|base64_|(\.\./){2,} [NC,OR]

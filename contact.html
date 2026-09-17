@@ -310,6 +310,18 @@
             <textarea id="bk-message" name="message" maxlength="2000"></textarea>
           </div>
 
+          <div class="field field--full" data-math-wrap>
+            <label for="bk-math">
+              <span data-i18n="bk.fMath">Anti-spam check &mdash; what is</span>
+              <b data-math-q>&hellip;</b>?
+              <span class="req">*</span>
+            </label>
+            <input type="text" id="bk-math" name="math_answer" inputmode="numeric" autocomplete="off" maxlength="4" required>
+            <input type="hidden" name="math_token" data-math-token value="">
+            <span class="field-hint" data-i18n="bk.hMath">A quick sum, to keep automated spam out.</span>
+            <span class="field-error" data-i18n="bk.eMath">That answer is not right — please try again.</span>
+          </div>
+
           <!-- Honeypot: hidden from people and from screen readers. -->
           <div class="hp-field" aria-hidden="true">
             <label for="bk-company">Company</label>

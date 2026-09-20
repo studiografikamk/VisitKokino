@@ -103,6 +103,20 @@ DirectoryIndex index.html
   RewriteCond %{REQUEST_URI} ^/fr(/|$) [NC]
   RewriteRule .* / [R=301,L]
 
+  # ---------------------------------------------------------------------------
+  # Macedonian used to be selected with ?lang=mk, which served identical English
+  # HTML and canonicalised back to the English URL -- so Google filed those URLs
+  # as duplicates and never indexed them. Each language now has its own page.
+  # Send the old query-string form to the real Macedonian URL.
+  # ---------------------------------------------------------------------------
+  RewriteCond %{QUERY_STRING} (^|&)lang=mk(&|$) [NC]
+  RewriteCond %{REQUEST_URI} !^/mk/
+  RewriteRule ^(.*)$ /mk/$1? [R=301,L]
+
+  # ?lang=en is simply the canonical page without the query string.
+  RewriteCond %{QUERY_STRING} (^|&)lang=en(&|$) [NC]
+  RewriteRule ^(.*)$ /$1? [R=301,L]
+
   # Leftover WordPress scaffolding from the old site.
   RewriteCond %{REQUEST_URI} ^/(sample-page|hello-world)(-[0-9]+)?/?$ [NC]
   RewriteRule .* / [R=301,L]

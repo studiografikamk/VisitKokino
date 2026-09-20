@@ -4,80 +4,180 @@
   <url>
     <loc>https://visitkokino.com/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/"/>
-    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/?lang=mk"/>
-    <lastmod>2026-09-17</lastmod>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/"/>
+    <lastmod>2026-09-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://visitkokino.com/mk/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/"/>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/"/>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://visitkokino.com/visit.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/visit.html"/>
-    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/visit.html?lang=mk"/>
-    <lastmod>2026-09-17</lastmod>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/visit.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/visit.html"/>
+    <lastmod>2026-09-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://visitkokino.com/mk/visit.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/visit.html"/>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/visit.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/visit.html"/>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://visitkokino.com/audio-guide.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/audio-guide.html"/>
-    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/audio-guide.html?lang=mk"/>
-    <lastmod>2026-09-17</lastmod>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/audio-guide.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/audio-guide.html"/>
+    <lastmod>2026-09-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://visitkokino.com/mk/audio-guide.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/audio-guide.html"/>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/audio-guide.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/audio-guide.html"/>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://visitkokino.com/site-map.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/site-map.html"/>
-    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/site-map.html?lang=mk"/>
-    <lastmod>2026-09-17</lastmod>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/site-map.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/site-map.html"/>
+    <lastmod>2026-09-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://visitkokino.com/mk/site-map.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/site-map.html"/>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/site-map.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/site-map.html"/>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://visitkokino.com/astronomy.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/astronomy.html"/>
-    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/astronomy.html?lang=mk"/>
-    <lastmod>2026-09-17</lastmod>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/astronomy.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/astronomy.html"/>
+    <lastmod>2026-09-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://visitkokino.com/mk/astronomy.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/astronomy.html"/>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/astronomy.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/astronomy.html"/>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://visitkokino.com/archaeology.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/archaeology.html"/>
-    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/archaeology.html?lang=mk"/>
-    <lastmod>2026-09-17</lastmod>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/archaeology.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/archaeology.html"/>
+    <lastmod>2026-09-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://visitkokino.com/mk/archaeology.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/archaeology.html"/>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/archaeology.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/archaeology.html"/>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://visitkokino.com/myths.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/myths.html"/>
-    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/myths.html?lang=mk"/>
-    <lastmod>2026-09-17</lastmod>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/myths.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/myths.html"/>
+    <lastmod>2026-09-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://visitkokino.com/mk/myths.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/myths.html"/>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/myths.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/myths.html"/>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://visitkokino.com/museum.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/museum.html"/>
-    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/museum.html?lang=mk"/>
-    <lastmod>2026-09-17</lastmod>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/museum.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/museum.html"/>
+    <lastmod>2026-09-20</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://visitkokino.com/mk/museum.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/museum.html"/>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/museum.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/museum.html"/>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://visitkokino.com/gallery.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/gallery.html"/>
-    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/gallery.html?lang=mk"/>
-    <lastmod>2026-09-17</lastmod>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/gallery.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/gallery.html"/>
+    <lastmod>2026-09-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://visitkokino.com/mk/gallery.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/gallery.html"/>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/gallery.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/gallery.html"/>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://visitkokino.com/contact.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/contact.html"/>
-    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/contact.html?lang=mk"/>
-    <lastmod>2026-09-17</lastmod>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/contact.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/contact.html"/>
+    <lastmod>2026-09-20</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://visitkokino.com/mk/contact.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://visitkokino.com/contact.html"/>
+    <xhtml:link rel="alternate" hreflang="mk" href="https://visitkokino.com/mk/contact.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://visitkokino.com/contact.html"/>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
   </url>

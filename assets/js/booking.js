@@ -47,7 +47,7 @@
     if (mathInput) mathInput.value = '';
 
     var lang = document.documentElement.lang === 'mk' ? 'mk' : 'en';
-    return fetch('booking.php?challenge=1&lang=' + lang, {
+    return fetch('/booking.php?challenge=1&lang=' + lang, {
       headers: { 'Accept': 'application/json' },
       credentials: 'same-origin',
       cache: 'no-store'

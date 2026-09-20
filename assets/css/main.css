@@ -270,15 +270,20 @@ html[lang="mk"] h2 { font-size: clamp(1.8rem, 3.8vw, 2.7rem); }
   display: inline-flex; gap: 2px; padding: 3px; margin-left: .4rem;
   background: rgba(255, 255, 255, .07); border-radius: 999px;
 }
-.lang-switch button {
+/* Each language is a real page, so these are links rather than buttons —
+   crawlable, and they work with scripting off. */
+.lang-switch a {
+  display: inline-block;
   min-width: 38px; padding: .28rem .55rem;
   font: inherit; font-size: .74rem; font-weight: 700; letter-spacing: .05em;
+  text-align: center; text-decoration: none;
   color: var(--ink-dim); background: none; border: 0;
-  border-radius: 999px; cursor: pointer;
+  border-radius: 999px;
   transition: color .2s var(--ease), background .2s var(--ease);
 }
-.lang-switch button:hover { color: var(--ink); }
-.lang-switch button[aria-pressed="true"] { background: var(--amber-500); color: var(--night-900); }
+.lang-switch a:hover { color: var(--ink); }
+.lang-switch a[aria-current] { background: var(--amber-500); color: var(--night-900); }
+.lang-switch a[aria-current]:hover { color: var(--night-900); }
 
 .nav-toggle {
   display: none; width: 44px; height: 44px; margin-left: auto;

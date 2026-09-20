@@ -5,7 +5,9 @@
 > audio guide and private day trips from Skopje.
 
 Site: https://visitkokino.com
-Languages: English (default), Macedonian (`?lang=mk`)
+Languages: English at the paths below, Macedonian at the same paths under `/mk/`
+(for example https://visitkokino.com/mk/visit.html). Both are fully written out in
+the HTML; neither depends on JavaScript.
 
 ## Key facts
 

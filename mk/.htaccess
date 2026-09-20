@@ -1,0 +1,2 @@
+# Serve the Macedonian error page for missing pages under /mk/.
+ErrorDocument 404 /mk/404.html

@@ -60,13 +60,62 @@ function send_json(array $payload, int $status = 200) {
     exit;
 }
 
+/**
+ * Which language to answer in. The form posts `lang`; the challenge endpoint
+ * takes it as a query parameter. Anything unrecognised falls back to English.
+ */
+function lang(): string {
+    $v = $_POST['lang'] ?? $_GET['lang'] ?? 'en';
+    return (is_string($v) && strtolower($v) === 'mk') ? 'mk' : 'en';
+}
+
+/** Look up a response message in the visitor's language. */
+function msg(string $key): string {
+    static $m = [
+        'blocked' => [
+            'en' => 'Request blocked.',
+            'mk' => 'Барањето е блокирано.',
+        ],
+        'thanks_quiet' => [
+            'en' => 'Thank you — your enquiry has been sent.',
+            'mk' => 'Ви благодариме — вашето барање е испратено.',
+        ],
+        'rate' => [
+            'en' => 'Too many enquiries from this connection. Please try again later, or email us directly.',
+            'mk' => 'Премногу барања од оваа врска. Обидете се подоцна или пишете ни директно.',
+        ],
+        'maths' => [
+            'en' => 'The anti-spam answer was wrong or has expired. Please try the sum again.',
+            'mk' => 'Одговорот на проверката против спам е погрешен или истечен. Обидете се повторно.',
+        ],
+        'fields' => [
+            'en' => 'Please check the highlighted fields and try again.',
+            'mk' => 'Проверете ги означените полиња и обидете се повторно.',
+        ],
+        'badheader' => [
+            'en' => 'Could not send the enquiry.',
+            'mk' => 'Барањето не можеше да се испрати.',
+        ],
+        'sendfail' => [
+            'en' => 'We could not send your enquiry just now. Please email info@visitkokino.com or message us on WhatsApp.',
+            'mk' => 'Во моментов не можевме да го испратиме вашето барање. Пишете на info@visitkokino.com или преку WhatsApp.',
+        ],
+        'sent' => [
+            'en' => 'Thank you — your enquiry is on its way. We usually reply within a few hours.',
+            'mk' => 'Ви благодариме — вашето барање е на пат. Обично одговараме во рок од неколку часа.',
+        ],
+    ];
+    return $m[$key][lang()] ?? $m[$key]['en'];
+}
+
 // No `never` return type: that needs PHP 8.1, and this way the file runs on 8.0 too.
 function finish(bool $ok, string $message, int $status = 200) {
     if (wants_json()) {
         send_json(['ok' => $ok, 'message' => $message], $status);
     }
+    $base = lang() === 'mk' ? '/mk/contact.html' : '/contact.html';
     http_response_code(303);
-    header('Location: ' . ($ok ? REDIRECT_OK : REDIRECT_BAD));
+    header('Location: ' . $base . ($ok ? '?sent=1#booking' : '?sent=0#booking'));
     exit;
 }
 
@@ -208,8 +257,7 @@ function challenge_ok(string $token, string $given): bool {
 // GET: either hand out a challenge, or refuse politely.
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     if (isset($_GET['challenge'])) {
-        $lang = ($_GET['lang'] ?? '') === 'mk' ? 'mk' : 'en';
-        send_json(make_challenge($lang));
+        send_json(make_challenge(lang()));
     }
     http_response_code(405);
     header('Content-Type: text/plain; charset=utf-8');
@@ -227,7 +275,7 @@ $source = $origin !== '' ? $origin : $ref;
 if ($source !== '') {
     $host = parse_url($source, PHP_URL_HOST) ?: '';
     if ($host !== SITE_HOST && $host !== 'www.' . SITE_HOST) {
-        finish(false, 'Request blocked.', 403);
+        finish(false, msg('blocked'), 403);
     }
 }
 
@@ -235,18 +283,18 @@ if ($source !== '') {
 // Honeypot. Real people never see this field, so anything in it is a bot.
 // Answer normally so the bot has no signal to learn from.
 if (clean('company') !== '') {
-    finish(true, 'Thank you — your enquiry has been sent.');
+    finish(true, msg('thanks_quiet'));
 }
 
 // ------------------------------------------------------------------- gate 4 --
 if (rate_limited()) {
-    finish(false, 'Too many enquiries from this connection. Please try again later, or email us directly.', 429);
+    finish(false, msg('rate'), 429);
 }
 
 // ------------------------------------------------------------------- gate 5 --
 // Maths challenge.
 if (!challenge_ok(clean('math_token', 400), clean('math_answer', 8))) {
-    finish(false, 'The anti-spam answer was wrong or has expired. Please try the sum again.', 422);
+    finish(false, msg('maths'), 422);
 }
 
 // ----------------------------------------------------------------- collect --
@@ -271,7 +319,7 @@ if ($people !== '' && !preg_match('/^[1-4]$/', $people))          $errors[] = 'p
 if (!in_array($lunch, ['', 'yes', 'no', 'undecided'], true))      $errors[] = 'lunch';
 
 if ($errors) {
-    finish(false, 'Please check the highlighted fields and try again.', 422);
+    finish(false, msg('fields'), 422);
 }
 
 // -------------------------------------------------------------- build mail --
@@ -381,7 +429,7 @@ $headers = [
 ];
 
 foreach ($headers as $h) {
-    if (!header_safe($h)) finish(false, 'Could not send the enquiry.', 400);
+    if (!header_safe($h)) finish(false, msg('badheader'), 400);
 }
 
 // ------------------------------------------------------------------- send ---
@@ -393,7 +441,7 @@ foreach (MAIL_TO as $to) {
 }
 
 if (!$sent) {
-    finish(false, 'We could not send your enquiry just now. Please email info@visitkokino.com or message us on WhatsApp.', 500);
+    finish(false, msg('sendfail'), 500);
 }
 
-finish(true, 'Thank you — your enquiry is on its way. We usually reply within a few hours.');
+finish(true, msg('sent'));

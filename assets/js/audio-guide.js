@@ -8,6 +8,30 @@
 (function () {
   'use strict';
 
+  // Strings the player writes into the page, per language.
+  var T = {
+    en: {
+      play: 'Play', pause: 'Pause',
+      stop: 'Stop {n} of {total}',
+      resume: 'Resume \u2014 stop {n} of {total}',
+      failed: 'This recording could not be loaded.',
+      album: 'Megalithic Observatory Kokino',
+      artist: 'Visit Kokino \u2014 Audio Guide'
+    },
+    mk: {
+      play: 'Пушти', pause: 'Пауза',
+      stop: 'Стојалиште {n} од {total}',
+      resume: 'Продолжи \u2014 стојалиште {n} од {total}',
+      failed: 'Оваа снимка не може да се вчита.',
+      album: 'Мегалитска опсерваторија Кокино',
+      artist: 'Посетете Кокино \u2014 аудио водич'
+    }
+  }[document.documentElement.lang === 'mk' ? 'mk' : 'en'];
+
+  function fill(tpl, n, total) {
+    return tpl.replace('{n}', n).replace('{total}', total);
+  }
+
   var root = document.querySelector('[data-audio-guide]');
   if (!root) return;
 
@@ -59,7 +83,7 @@
     if (!el.icon) return;
     el.icon.className = playing ? 'bi bi-pause-fill' : 'bi bi-play-fill';
     if (el.play) {
-      el.play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+      el.play.setAttribute('aria-label', playing ? T.pause : T.play);
     }
   }
 
@@ -87,8 +111,8 @@
     try {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: d.title ? d.title.textContent : 'Kokino',
-        artist: 'Visit Kokino — Audio Guide',
-        album: 'Megalithic Observatory Kokino'
+        artist: T.artist,
+        album: T.album
       });
       navigator.mediaSession.setActionHandler('play', play);
       navigator.mediaSession.setActionHandler('pause', pause);
@@ -104,7 +128,7 @@
 
     if (el.title && d.title) el.title.textContent = d.title.textContent;
     if (el.sub && d.sub) el.sub.textContent = d.sub.textContent;
-    if (el.label) el.label.textContent = 'Stop ' + (index + 1) + ' of ' + stops.length;
+    if (el.label) el.label.textContent = fill(T.stop, index + 1, stops.length);
     if (el.dur && d.time) el.dur.textContent = d.time;
 
     stops.forEach(function (node, i) {
@@ -231,7 +255,7 @@
   });
 
   audio.addEventListener('error', function () {
-    if (el.sub) el.sub.textContent = 'This recording could not be loaded.';
+    if (el.sub) el.sub.textContent = T.failed;
     setPlayIcon(false);
   });
 
@@ -255,7 +279,7 @@
       if (saved.t < audio.duration) audio.currentTime = saved.t;
     });
     if (el.label) {
-      el.label.textContent = 'Resume — stop ' + (saved.i + 1) + ' of ' + stops.length;
+      el.label.textContent = fill(T.resume, saved.i + 1, stops.length);
     }
   }
 

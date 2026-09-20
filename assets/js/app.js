@@ -5,6 +5,12 @@
 (function () {
   'use strict';
 
+  // Strings the script injects. The page language decides which set is used.
+  var T = {
+    en: { viewer: 'Image viewer', close: 'Close' },
+    mk: { viewer: 'Прегледувач на слики', close: 'Затвори' }
+  }[document.documentElement.lang === 'mk' ? 'mk' : 'en'];
+
   /* ---------- Sticky navbar ---------------------------------------------- */
 
   var nav = document.querySelector('.nav-bar');
@@ -118,7 +124,7 @@
     box.className = 'lightbox';
     box.setAttribute('role', 'dialog');
     box.setAttribute('aria-modal', 'true');
-    box.setAttribute('aria-label', 'Image viewer');
+    box.setAttribute('aria-label', T.viewer);
 
     var inner = document.createElement('div');
     inner.className = 'center';
@@ -132,7 +138,7 @@
     var closeBtn = document.createElement('button');
     closeBtn.type = 'button';
     closeBtn.className = 'lightbox-close';
-    closeBtn.setAttribute('aria-label', 'Close');
+    closeBtn.setAttribute('aria-label', T.close);
     closeBtn.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
 
     inner.appendChild(bigImg);

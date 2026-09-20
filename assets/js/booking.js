@@ -12,6 +12,33 @@
 (function () {
   'use strict';
 
+  var LANG = document.documentElement.lang === 'mk' ? 'mk' : 'en';
+
+  // Everything this script can say, per language. Anything the SERVER returns
+  // is localised by booking.php instead.
+  var T = {
+    en: {
+      sending: 'Sending\u2026',
+      noChallenge: 'Could not load the anti-spam check. Please reload the page.',
+      noFetch: 'Your browser cannot submit this form. Please email info@visitkokino.com or message us on WhatsApp.',
+      sent: 'Your enquiry has been sent.',
+      generic: 'Something went wrong.',
+      offline: 'We could not reach the server. Please email info@visitkokino.com or message us on WhatsApp.',
+      thanks: 'Thank you \u2014 your enquiry is on its way. We usually reply within a few hours.',
+      failed: 'Your enquiry could not be sent. Please check the form, or email info@visitkokino.com.'
+    },
+    mk: {
+      sending: 'Се испраќа\u2026',
+      noChallenge: 'Проверката против спам не се вчита. Ве молиме превчитајте ја страницата.',
+      noFetch: 'Вашиот прелистувач не може да го испрати формуларот. Пишете ни на info@visitkokino.com или преку WhatsApp.',
+      sent: 'Вашето барање е испратено.',
+      generic: 'Нешто тргна наопаку.',
+      offline: 'Не можевме да се поврземе со серверот. Пишете ни на info@visitkokino.com или преку WhatsApp.',
+      thanks: 'Ви благодариме \u2014 вашето барање е на пат. Обично одговараме во рок од неколку часа.',
+      failed: 'Барањето не можеше да се испрати. Проверете го формуларот или пишете на info@visitkokino.com.'
+    }
+  }[LANG];
+
   var form = document.querySelector('[data-booking]');
   if (!form) return;
 
@@ -46,8 +73,7 @@
     mathQ.textContent = '…';
     if (mathInput) mathInput.value = '';
 
-    var lang = document.documentElement.lang === 'mk' ? 'mk' : 'en';
-    return fetch('/booking.php?challenge=1&lang=' + lang, {
+    return fetch('/booking.php?challenge=1&lang=' + LANG, {
       headers: { 'Accept': 'application/json' },
       credentials: 'same-origin',
       cache: 'no-store'
@@ -63,7 +89,7 @@
         mathToken.value = '';
         if (mathWrap) {
           var hint = mathWrap.querySelector('.field-hint');
-          if (hint) hint.textContent = 'Could not load the anti-spam check. Please reload the page.';
+          if (hint) hint.textContent = T.noChallenge;
         }
       });
   }
@@ -136,24 +162,24 @@
     }
 
     if (!window.fetch || !window.FormData) {
-      showStatus(false, 'Your browser cannot submit this form. Please email info@visitkokino.com or message us on WhatsApp.');
+      showStatus(false, T.noFetch);
       return;
     }
 
     if (submitBtn) {
       submitBtn.disabled = true;
-      if (submitLbl) submitLbl.textContent = 'Sending…';
+      if (submitLbl) submitLbl.textContent = T.sending;
     }
 
     fetch(form.action, {
       method: 'POST',
-      body: new FormData(form),
+      body: (function () { var fd = new FormData(form); fd.append('lang', LANG); return fd; })(),
       headers: { 'Accept': 'application/json', 'X-Requested-With': 'fetch' },
       credentials: 'same-origin'
     })
       .then(function (res) {
         return res.json().catch(function () {
-          return { ok: res.ok, message: res.ok ? 'Your enquiry has been sent.' : 'Something went wrong.' };
+          return { ok: res.ok, message: res.ok ? T.sent : T.generic };
         });
       })
       .then(function (data) {
@@ -168,7 +194,7 @@
         return loadChallenge();
       })
       .catch(function () {
-        showStatus(false, 'We could not reach the server. Please email info@visitkokino.com or message us on WhatsApp.');
+        showStatus(false, T.offline);
         return loadChallenge();
       })
       .then(function () {
@@ -183,8 +209,8 @@
 
   var sent = new URLSearchParams(window.location.search).get('sent');
   if (sent === '1') {
-    showStatus(true, 'Thank you — your enquiry is on its way. We usually reply within a few hours.');
+    showStatus(true, T.thanks);
   } else if (sent === '0') {
-    showStatus(false, 'Your enquiry could not be sent. Please check the form, or email info@visitkokino.com.');
+    showStatus(false, T.failed);
   }
 })();

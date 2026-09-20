@@ -1,9 +1,9 @@
 # =============================================================================
 #  visitkokino.com — Apache configuration (cPanel / LiteSpeed compatible)
 #
-#  This is a fully static site: no PHP, no database, no server-side input
-#  handling. There is therefore no SQL injection surface at all — there is no
-#  SQL. What follows hardens everything that remains.
+#  Static apart from booking.php, which handles the enquiry form. There is no
+#  database anywhere, so no SQL injection surface. POST is accepted only at
+#  that one path; everything else is read-only. What follows hardens the rest.
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -41,6 +41,61 @@ DirectoryIndex index.html
   RewriteCond %{HTTP:X-Forwarded-Proto} !https
   RewriteRule ^(.*)$ https://visitkokino.com/$1 [R=301,L]
 
+
+  # ---------------------------------------------------------------------------
+  # Legacy URLs from the previous visitkokino.com (a Macedonian/French
+  # WordPress site). Google still holds these and was returning 404s for
+  # them, so send each one to its modern equivalent rather than losing the
+  # link equity. Matching is on the percent-encoded REQUEST_URI because the
+  # old slugs were Cyrillic.
+  # ---------------------------------------------------------------------------
+
+  # посетете-не  (visit us)
+  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%BF%D0%BE%D1%81%D0%B5%D1%82%D0%B5%D1%82%D0%B5-%D0%BD%D0%B5/?$ [NC]
+  RewriteRule .* /visit.html [R=301,L]
+
+  # обреди  (rituals)
+  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%BE%D0%B1%D1%80%D0%B5%D0%B4%D0%B8/?$ [NC]
+  RewriteRule .* /myths.html [R=301,L]
+
+  # археологија  (archaeology)
+  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%B0%D1%80%D1%85%D0%B5%D0%BE%D0%BB%D0%BE%D0%B3%D0%B8%D1%98%D0%B0/?$ [NC]
+  RewriteRule .* /archaeology.html [R=301,L]
+
+  # астрономија  (astronomy)
+  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%BD%D0%BE%D0%BC%D0%B8%D1%98%D0%B0/?$ [NC]
+  RewriteRule .* /astronomy.html [R=301,L]
+
+  # митови-и-приказни  (myths and stories)
+  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%BC%D0%B8%D1%82%D0%BE%D0%B2%D0%B8-%D0%B8-%D0%BF%D1%80%D0%B8%D0%BA%D0%B0%D0%B7%D0%BD%D0%B8/?$ [NC]
+  RewriteRule .* /myths.html [R=301,L]
+
+  # музеј  (museum)
+  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%BC%D1%83%D0%B7%D0%B5%D1%98/?$ [NC]
+  RewriteRule .* /museum.html [R=301,L]
+
+  # настани  (events)
+  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%BD%D0%B0%D1%81%D1%82%D0%B0%D0%BD%D0%B8/?$ [NC]
+  RewriteRule .* /visit.html [R=301,L]
+
+  RewriteCond %{REQUEST_URI} ^/(fr/)?mapa-na-lokalitet/?$ [NC]
+  RewriteRule .* /site-map.html [R=301,L]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?contact/?$ [NC]
+  RewriteRule .* /contact.html [R=301,L]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?blog/?$ [NC]
+  RewriteRule .* / [R=301,L]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?services/?$ [NC]
+  RewriteRule .* / [R=301,L]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?about/?$ [NC]
+  RewriteRule .* / [R=301,L]
+
+  # Anything else left under the old French tree goes to the home page.
+  RewriteCond %{REQUEST_URI} ^/fr(/|$) [NC]
+  RewriteRule .* / [R=301,L]
+
+  # Leftover WordPress scaffolding from the old site.
+  RewriteCond %{REQUEST_URI} ^/(sample-page|hello-world)(-[0-9]+)?/?$ [NC]
+  RewriteRule .* / [R=301,L]
   # Block requests that try to smuggle a script tag or a traversal through the URL
   RewriteCond %{QUERY_STRING} (<|%3C)script|base64_|(\.\./){2,} [NC,OR]
   RewriteCond %{QUERY_STRING} (union\s+select|information_schema|concat\s*\() [NC]

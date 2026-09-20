@@ -109,12 +109,17 @@ DirectoryIndex index.html
   # as duplicates and never indexed them. Each language now has its own page.
   # Send the old query-string form to the real Macedonian URL.
   # ---------------------------------------------------------------------------
+  # booking.php takes ?lang= as a real parameter (it decides which language the
+  # anti-spam sum is worded in), so it must be excluded from both rules below.
+  # Without this it 301s and the form can never load its challenge.
   RewriteCond %{QUERY_STRING} (^|&)lang=mk(&|$) [NC]
   RewriteCond %{REQUEST_URI} !^/mk/
+  RewriteCond %{REQUEST_URI} !^/booking\.php$
   RewriteRule ^(.*)$ /mk/$1? [R=301,L]
 
   # ?lang=en is simply the canonical page without the query string.
   RewriteCond %{QUERY_STRING} (^|&)lang=en(&|$) [NC]
+  RewriteCond %{REQUEST_URI} !^/booking\.php$
   RewriteRule ^(.*)$ /$1? [R=301,L]
 
   # Leftover WordPress scaffolding from the old site.

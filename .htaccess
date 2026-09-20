@@ -44,38 +44,47 @@ DirectoryIndex index.html
 
   # ---------------------------------------------------------------------------
   # Legacy URLs from the previous visitkokino.com (a Macedonian/French
-  # WordPress site). Google still holds these and was returning 404s for
-  # them, so send each one to its modern equivalent rather than losing the
-  # link equity. Matching is on the percent-encoded REQUEST_URI because the
-  # old slugs were Cyrillic.
+  # WordPress site). Google still holds these, so send each one to its modern
+  # equivalent rather than 404ing and losing the link equity.
+  #
+  # Each slug is matched TWICE: once percent-encoded and once as literal UTF-8.
+  # Apache gives mod_rewrite the raw encoded REQUEST_URI; LiteSpeed (this host)
+  # gives it already decoded. Matching both makes the rules portable.
   # ---------------------------------------------------------------------------
 
   # посетете-не  (visit us)
-  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%BF%D0%BE%D1%81%D0%B5%D1%82%D0%B5%D1%82%D0%B5-%D0%BD%D0%B5/?$ [NC]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%BF%D0%BE%D1%81%D0%B5%D1%82%D0%B5%D1%82%D0%B5-%D0%BD%D0%B5/?$ [NC,OR]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?посетете-не/?$ [NC]
   RewriteRule .* /visit.html [R=301,L]
 
   # обреди  (rituals)
-  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%BE%D0%B1%D1%80%D0%B5%D0%B4%D0%B8/?$ [NC]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%BE%D0%B1%D1%80%D0%B5%D0%B4%D0%B8/?$ [NC,OR]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?обреди/?$ [NC]
   RewriteRule .* /myths.html [R=301,L]
 
   # археологија  (archaeology)
-  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%B0%D1%80%D1%85%D0%B5%D0%BE%D0%BB%D0%BE%D0%B3%D0%B8%D1%98%D0%B0/?$ [NC]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%B0%D1%80%D1%85%D0%B5%D0%BE%D0%BB%D0%BE%D0%B3%D0%B8%D1%98%D0%B0/?$ [NC,OR]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?археологија/?$ [NC]
   RewriteRule .* /archaeology.html [R=301,L]
 
   # астрономија  (astronomy)
-  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%BD%D0%BE%D0%BC%D0%B8%D1%98%D0%B0/?$ [NC]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%BD%D0%BE%D0%BC%D0%B8%D1%98%D0%B0/?$ [NC,OR]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?астрономија/?$ [NC]
   RewriteRule .* /astronomy.html [R=301,L]
 
   # митови-и-приказни  (myths and stories)
-  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%BC%D0%B8%D1%82%D0%BE%D0%B2%D0%B8-%D0%B8-%D0%BF%D1%80%D0%B8%D0%BA%D0%B0%D0%B7%D0%BD%D0%B8/?$ [NC]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%BC%D0%B8%D1%82%D0%BE%D0%B2%D0%B8-%D0%B8-%D0%BF%D1%80%D0%B8%D0%BA%D0%B0%D0%B7%D0%BD%D0%B8/?$ [NC,OR]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?митови-и-приказни/?$ [NC]
   RewriteRule .* /myths.html [R=301,L]
 
   # музеј  (museum)
-  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%BC%D1%83%D0%B7%D0%B5%D1%98/?$ [NC]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%BC%D1%83%D0%B7%D0%B5%D1%98/?$ [NC,OR]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?музеј/?$ [NC]
   RewriteRule .* /museum.html [R=301,L]
 
   # настани  (events)
-  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%BD%D0%B0%D1%81%D1%82%D0%B0%D0%BD%D0%B8/?$ [NC]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?%D0%BD%D0%B0%D1%81%D1%82%D0%B0%D0%BD%D0%B8/?$ [NC,OR]
+  RewriteCond %{REQUEST_URI} ^/(fr/)?настани/?$ [NC]
   RewriteRule .* /visit.html [R=301,L]
 
   RewriteCond %{REQUEST_URI} ^/(fr/)?mapa-na-lokalitet/?$ [NC]
@@ -89,7 +98,8 @@ DirectoryIndex index.html
   RewriteCond %{REQUEST_URI} ^/(fr/)?about/?$ [NC]
   RewriteRule .* / [R=301,L]
 
-  # Anything else left under the old French tree goes to the home page.
+  # Anything else still under the old French tree goes to the home page.
+  # This must stay AFTER the specific rules above, or it would swallow them.
   RewriteCond %{REQUEST_URI} ^/fr(/|$) [NC]
   RewriteRule .* / [R=301,L]
 
